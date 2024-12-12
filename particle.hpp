@@ -16,12 +16,7 @@ class Particle {
             velocity.setCoordinate(0,0);
             personalBest.setCoordinate(0,0);
         } 
-        Particle(double x, double y, double vx, double vy){
-            position.setCoordinate(x, y);
-            velocity.setCoordinate(vx, vy);
-            personalBest.setCoordinate(0,0);
-        }
-
+        Particle(double x, double y, double vx, double vy): position(x,y), velocity(vx,vy), personalBest(x,y){}
         void updatePosition(double x, double y){
             position.setCoordinate(x,y);
         }
