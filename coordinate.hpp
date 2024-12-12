@@ -8,6 +8,14 @@ class Coordinate{
         double y;
 
     public: 
+        Coordinate(){
+            x = 0;
+            y = 0;
+        }
+        Coordinate(double x, double y){
+            this->x = x;
+            this->y = y;
+        }
         void setCoordinate(double x, double y){
             this->x = x;
             this->y = y;
