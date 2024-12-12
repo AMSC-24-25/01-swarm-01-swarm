@@ -1,27 +1,29 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <coordinate.hpp>
+#include "coordinate.hpp"
 
 class Particle {
-    private Coordinate position;
-    private Coordinate velocity;
-    private double personalBest;
-    private static Coordinate globalBest;
+    private: 
+        Coordinate position;
+        Coordinate velocity;
+        double personalBest;
+        static Coordinate globalBest;
 
-    public Particle(double x, double y, double vx, double vy){
-        position.setCoordinate(x, y);
-        velocity.setCoordinate(vx, vy);
-        personalBest = 0;
-    }
+    public: 
+        Particle(double x, double y, double vx, double vy){
+            position.setCoordinate(x, y);
+            velocity.setCoordinate(vx, vy);
+            personalBest = 0;
+        }
 
-    public void updatePosition(){
-        position.setCoordinate();
-    }
-    public void updateVelocity(){
-        velocity.setCoordinate();
-    }
-    public void updatePersonalBest(double newBest){
-        personalBest = newBest;
-    }
+        void updatePosition(){
+            position.setCoordinate();
+        }
+        void updateVelocity(){
+            velocity.setCoordinate();
+        }
+        void updatePersonalBest(double newBest){
+            personalBest = newBest;
+        }
 }
