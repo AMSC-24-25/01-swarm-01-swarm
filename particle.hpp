@@ -7,19 +7,19 @@ class Particle {
     private: 
         Coordinate position;
         Coordinate velocity;
-        double personalBest;
+        Coordinate personalBest;
         static Coordinate globalBest;
 
     public:
         Particle(){
             position.setCoordinate(0,0);
             velocity.setCoordinate(0,0);
-            personalBest = 0;
+            personalBest.setCoordinate(0,0);
         } 
         Particle(double x, double y, double vx, double vy){
             position.setCoordinate(x, y);
             velocity.setCoordinate(vx, vy);
-            personalBest = 0;
+            personalBest.setCoordinate(0,0);
         }
 
         void updatePosition(double x, double y){
@@ -28,11 +28,20 @@ class Particle {
         void updateVelocity(double x, double y){
             velocity.setCoordinate(x,y);
         }
-        void updatePersonalBest(double newBest){
-            personalBest = newBest;
+        void updatePersonalBest(double newBestx, double newBesty){
+            personalBest.setCoordinate(newBestx, newBesty);
+        }
+        Coordinate getGlobalBest(){
+            return globalBest;
+        }
+        Coordinate getPersonalBest(){
+            return personalBest;
         }
         Coordinate getPosition(){
             return position;
+        }
+        Coordinate getVelocity(){
+            return velocity;
         }
         
 };
