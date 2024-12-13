@@ -26,16 +26,16 @@ class Particle {
         void updatePersonalBest(double newBestx, double newBesty){
             personalBest.setCoordinate(newBestx, newBesty);
         }
-        Coordinate getGlobalBest(){
+        Coordinate getGlobalBest() const{
             return globalBest;
         }
-        Coordinate getPersonalBest(){
+        Coordinate getPersonalBest() const {
             return personalBest;
         }
-        Coordinate getPosition(){
+        Coordinate getPosition() const {
             return position;
         }
-        Coordinate getVelocity(){
+        Coordinate getVelocity() const {
             return velocity;
         }
         
