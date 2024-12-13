@@ -3,13 +3,16 @@
 #include <vector>
 #include <random>
 #include <cmath>
-
+#include <fstream>
+#include <sstream>
 using namespace std;
+
 Coordinate Particle::globalBest=Coordinate();
 
-#define N_PARTICLES 5
-#define LOWER_BOUND -100
-#define UPPER_BOUND 100
+#define N_PARTICLES 25
+#define LOWER_BOUND -300
+#define UPPER_BOUND 300
+#define N_ITERATIONS 25
 
 /*double clamp(double val) {
   if (val < LOWER_BOUND) return LOWER_BOUND;
@@ -17,11 +20,89 @@ Coordinate Particle::globalBest=Coordinate();
   return val;
 }*/
 
+enum FunctionType { RASTRIGIN, SPHERE, ROSENBROCK , STRANGE};
+
+FunctionType currentFunction = SPHERE;
+
 double rastrigin(Coordinate x) {
-    //return the rastrigin function with minimum at 3,3
-    return  12.3 + x.getX()*x.getX() + x.getY()*x.getY() - 10*(cos(2*M_PI*x.getX()) + cos(2*M_PI*x.getY()));
+    //return the rastrigin function value
+    return 20 + pow(x.getX(), 2) + pow(x.getY(), 2) - 10 * (cos(2 * M_PI * x.getX()) + cos(2 * M_PI * x.getY()));
     
 }
+
+double strangeFunction(Coordinate x) {
+    double xVal = x.getX();
+    double yVal = x.getY();
+
+    // Termini con valori ridotti
+    double term1 = sin(xVal) * cos(yVal) * exp(-abs(sqrt(xVal * xVal + yVal * yVal) / M_PI));
+    double term2 = 5 * pow(sin(xVal * yVal), 2);
+
+    // Combina i termini e riduce l'ampiezza
+    return -fabs(term1) + term2 - 0.5 * (xVal * xVal + yVal * yVal);
+}
+
+
+double sphere(Coordinate x) {
+    return x.getX() * x.getX() + x.getY() * x.getY()+ sqrt(x.getX() * x.getX() + x.getY() * x.getY())*0.5-sqrt(x.getX())*0.5+sqrt(x.getY())*0.5-x.getX()*x.getY();
+}
+
+double rosenbrock(Coordinate x) {
+    return 100 * pow(x.getY() - pow(x.getX(), 2), 2) + pow(1 - x.getX(), 2);
+}
+
+double evaluateFunction(Coordinate x) {
+    switch (currentFunction) {
+        case RASTRIGIN:
+            return rastrigin(x);
+        case SPHERE:
+            return sphere(x);
+        case ROSENBROCK:
+            return rosenbrock(x);
+        case STRANGE:
+            return strangeFunction(x);
+        default:
+            cerr << "Funzione non riconosciuta!" << endl;
+            exit(1);
+    }
+}
+
+
+
+
+
+void saveGridData() {
+    std::ofstream file("animation/grid.csv");
+    if (!file.is_open()) {
+        cerr << "Errore nell'aprire il file per la griglia!" << endl;
+        return;
+    }
+    file << "x,y,z\n";  // Intestazione CSV
+    for (double x = LOWER_BOUND; x <= UPPER_BOUND; x += 3) {
+        for (double y = LOWER_BOUND; y <= UPPER_BOUND; y += 3) {
+            double z = evaluateFunction(Coordinate(x, y));
+            file << x << "," << y << "," << z << "\n";
+        }
+    }
+    file.close();
+}
+
+void saveParticleData(const vector<Particle>& particles, int iteration) {
+    std::ofstream file("animation/particles_" + std::to_string(iteration) + ".csv");
+    if (!file.is_open()) {
+        cerr << "Errore nell'aprire il file per le particelle!" << endl;
+        return;
+    }
+    file << "x,y,z\n";  // Intestazione CSV
+    for (const auto& particle : particles) {
+        file << particle.getPosition().getX() << "," << particle.getPosition().getY() << "," << evaluateFunction(particle.getPosition()) << "\n";
+    }
+    file.close();
+}
+
+
+
+
 
 
 void updates(float inertia, float cognitive, float social, vector<Particle> &particles) {
@@ -35,11 +116,11 @@ void updates(float inertia, float cognitive, float social, vector<Particle> &par
         double y = particles[i].getPosition().getY() + vy;
         particles[i].updatePosition(x, y);
         //update personal best
-        if (rastrigin(particles[i].getPosition()) < rastrigin(particles[i].getPersonalBest())) {
+        if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(particles[i].getPersonalBest())) {
             particles[i].updatePersonalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
         }
         //update global best
-        if (rastrigin(particles[i].getPosition()) < rastrigin(particles[i].getGlobalBest())) {
+        if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(particles[i].getGlobalBest())) {
             particles[i].getGlobalBest().setCoordinate(particles[i].getPosition().getX(), particles[i].getPosition().getY());
         }
     }
@@ -62,7 +143,7 @@ int main() {
         }
         else{
             //update the global best if the particle is better
-            if (rastrigin(particles[i].getPosition()) < rastrigin(particles[i].getGlobalBest())) {
+            if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(particles[i].getGlobalBest())) {
                 particles[i].getGlobalBest().setCoordinate(particles[i].getPosition().getX(), particles[i].getPosition().getY());
             }
         }
@@ -72,13 +153,18 @@ int main() {
     float inertia = 0.5;
     float cognitive = 0.5;
     float social = 0.5;
-    for(int i = 0; i < 100; i++){
+    saveGridData();
+    for(int i = 0; i < N_ITERATIONS; i++){
         updates(inertia, cognitive, social, particles);
+        saveParticleData(particles, i);
     }
-    cout << "Global best: " << rastrigin(particles[0].getGlobalBest()) <<endl;
+    cout << "Global best: " << evaluateFunction(particles[0].getGlobalBest()) <<endl;
     /*for (int i = 0; i < N_PARTICLES; i++) {
         //print the particle position
         cout << "Particle " << i << " position: " << particles[i].getPosition().getX() << " " << particles[i].getPosition().getY() << endl;
     }*/
+   
+
+    
     return 0;
 }
