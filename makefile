@@ -28,4 +28,4 @@ position.o: coordinate.hpp
 
 # Regola per pulire i file generati
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f animation/*.csv frames/*.png animation.gif
