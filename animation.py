@@ -46,8 +46,8 @@ for i, particle_file in enumerate(particle_files):
     # Particelle
     ax.scatter(particles['x'], particles['y'], particles['z'], color='red', s=50, label='Particles')
 
-    ax.set_xlim(-300, 300)
-    ax.set_ylim(-300, 300)
+    ax.set_xlim(-4.5, 4.5)
+    ax.set_ylim(-4.5, 4.5)
     ax.set_zlim(z_min, z_max)  # Usa i nuovi limiti calcolati
     ax.set_title(f"PSO - Iteration {i}")
     ax.set_xlabel('X')
