@@ -9,7 +9,6 @@ class Particle {
         Coordinate velocity;
         Coordinate personalBest;
         static Coordinate globalBest;
-
     public:
         Particle(){
             position.setCoordinate(0,0);
@@ -26,7 +25,10 @@ class Particle {
         void updatePersonalBest(double newBestx, double newBesty){
             personalBest.setCoordinate(newBestx, newBesty);
         }
-        Coordinate getGlobalBest() const{
+        static void updateGlobalBest(double newBestx, double newBesty){
+            globalBest.setCoordinate(newBestx, newBesty);
+        }
+        static Coordinate& getGlobalBest(){
             return globalBest;
         }
         Coordinate getPersonalBest() const {
