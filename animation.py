@@ -2,8 +2,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-from glob import glob
-
+from PIL import Image
+import glob
 # Creazione delle cartelle per i frame
 output_folder = "./animation"
 frames_folder = "./frames"
@@ -13,7 +13,7 @@ os.makedirs(frames_folder, exist_ok=True)
 grid_data = pd.read_csv(os.path.join(output_folder, "grid.csv"))
 
 # File delle particelle
-particle_files = sorted(glob(os.path.join(output_folder, "particles_*.csv")))
+particle_files = sorted(glob.glob(os.path.join(output_folder, "particles_*.csv")))
 
 # Controlla se ci sono file
 if not particle_files:
@@ -46,8 +46,8 @@ for i, particle_file in enumerate(particle_files):
     # Particelle
     ax.scatter(particles['x'], particles['y'], particles['z'], color='red', s=50, label='Particles')
 
-    ax.set_xlim(-4.5, 4.5)
-    ax.set_ylim(-4.5, 4.5)
+    ax.set_xlim(-512, 512)
+    ax.set_ylim(-512, 512)
     ax.set_zlim(z_min, z_max)  # Usa i nuovi limiti calcolati
     ax.set_title(f"PSO - Iteration {i}")
     ax.set_xlabel('X')
@@ -59,3 +59,10 @@ for i, particle_file in enumerate(particle_files):
     plt.savefig(frame_filename)
 
 print(f"Tutti i frame sono stati salvati nella cartella: {frames_folder}")
+
+frames = sorted(glob.glob(os.path.join(frames_folder, "frame_*.png")))
+
+# Crea una GIF
+images = [Image.open(frame) for frame in frames]
+images[0].save("animation.gif", save_all=True, append_images=images[1:], duration=500, loop=0)
+print("GIF salvata come animation.gif")
