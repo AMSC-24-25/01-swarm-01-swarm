@@ -5,25 +5,31 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
 using namespace std;
 
 Coordinate Particle::globalBest=Coordinate(0,0);
 
-#define N_PARTICLES 100
-#define LOWER_BOUND -4.5
-#define UPPER_BOUND 4.5
-#define N_ITERATIONS 15
+int N_PARTICLES, N_ITERATIONS; 
+float LOWER_BOUND, UPPER_BOUND;
 
 double clamp(double val) {
-  if (val < -1.0) return -1.0;
-  if (val > 1.0) return 1.0;
+  if (val < -50) return -50;
+  if (val > 50) return 50;
   return val;
 }
 
 enum FunctionType { RASTRIGIN, SPHERE, ROSENBROCK ,BAELE, STRANGE};
 
-FunctionType currentFunction = BAELE;
-
+FunctionType currentFunction = STRANGE;
+double eggholder(Coordinate x) {
+    //return the eggholder function value
+    return -(x.getY() + 47) * sin(sqrt(abs(x.getY() + x.getX() / 2 + 47))) - x.getX() * sin(sqrt(abs(x.getX() - (x.getY() + 47))));
+}
+double simionescu(Coordinate x) {
+    //return the simionescu function value
+    return 0.5 + (pow(sin(sqrt(pow(x.getX(), 2) + pow(x.getY(), 2))), 2) - 0.5 / (1 + 0.001 * (pow(x.getX(), 2) + pow(x.getY(), 2))));
+}
 double rastrigin(Coordinate x) {
     //return the rastrigin function value
     return 20 + pow(x.getX(), 2) + pow(x.getY(), 2) - 10 * (cos(2 * M_PI * x.getX()) + cos(2 * M_PI * x.getY()));
@@ -61,7 +67,7 @@ double evaluateFunction(Coordinate x) {
         case ROSENBROCK:
             return rosenbrock(x);
         case STRANGE:
-            return strangeFunction(x);
+            return eggholder(x);
         default:
             cerr << "Funzione non riconosciuta!" << endl;
             exit(1);
@@ -79,8 +85,8 @@ void saveGridData() {
         return;
     }
     file << "x,y,z\n";  // Intestazione CSV
-    for (double x = LOWER_BOUND; x <= UPPER_BOUND; x += 0.1) {
-        for (double y = LOWER_BOUND; y <= UPPER_BOUND; y += 0.1) {
+    for (double x = LOWER_BOUND; x <= UPPER_BOUND; x += 2) {
+        for (double y = LOWER_BOUND; y <= UPPER_BOUND; y += 2) {
             double z = evaluateFunction(Coordinate(x, y));
             file << x << "," << y << "," << z << "\n";
         }
@@ -101,7 +107,30 @@ void saveParticleData(const vector<Particle>& particles, int iteration) {
     file.close();
 }
 
-
+void setupParticles(vector<Particle> &particles) {
+    random_device rd;   
+    mt19937 seed(rd());
+    uniform_real_distribution<> randomGenerator(LOWER_BOUND, UPPER_BOUND);
+    for (int i = 0; i < N_PARTICLES; i++) {
+        particles.push_back(Particle());
+    }
+    for (int i = 0; i < N_PARTICLES; i++) {
+        particles[i] = Particle(randomGenerator(seed), randomGenerator(seed), randomGenerator(seed), randomGenerator(seed));
+        particles[i].updatePersonalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
+        //set the global best to the first particle
+        if (i == 0) {
+            Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
+        }
+        else{
+            //update the global best if the particle is better
+            if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(Particle::getGlobalBest())) {
+                Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
+            }
+        }
+        //print the particle position
+        //cout << "Particle " << i << " position: " << particles[i].getPosition().getX() << " " << particles[i].getPosition().getY() << endl;
+    }
+}
 
 
 
@@ -130,46 +159,44 @@ void updates(float inertia, float cognitive, float social, vector<Particle> &par
 
 }
 
-int main() {
-    
-    random_device rd;   
-    mt19937 seed(rd());
-    uniform_real_distribution<> randomGenerator(LOWER_BOUND, UPPER_BOUND);
-    
-    vector<Particle> particles(N_PARTICLES);
-    for (int i = 0; i < N_PARTICLES; i++) {
-        particles[i] = Particle(randomGenerator(seed), randomGenerator(seed), randomGenerator(seed), randomGenerator(seed));
-        particles[i].updatePersonalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
-        //set the global best to the first particle
-        if (i == 0) {
-            Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
-        }
-        else{
-            //update the global best if the particle is better
-            if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(Particle::getGlobalBest())) {
-                Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
-            }
-        }
-        //print the particle position
-        //cout << "Particle " << i << " position: " << particles[i].getPosition().getX() << " " << particles[i].getPosition().getY() << endl;
+int main(int argc, char *argv[]) {
+
+    if (argc < 8){
+      cerr << "Usage: " << argv[0] << " N_Particles lowerBound upperBound N_Iterations inertiaW cognitiveW socialW" << endl;
+      return 1;
     }
-    float inertia = 0.5;
-    float cognitive = 0.5;
-    float social = 1.5;
+    N_PARTICLES = atoi(argv[1]);
+    LOWER_BOUND = stof(argv[2]);
+    UPPER_BOUND = stof(argv[3]);
+    N_ITERATIONS = atoi(argv[4]);
+    vector<Particle> particles(N_PARTICLES);
+    setupParticles(particles); 
+
+    float inertia = stof(argv[5]);
+    float cognitive = stof(argv[6]);
+    float social = stof(argv[7]);
+    //print out the parameter for debugging
+    cout << "N_PARTICLES: " << N_PARTICLES << endl;
+    cout << "LOWER_BOUND: " << LOWER_BOUND << endl;
+    cout << "UPPER_BOUND: " << UPPER_BOUND << endl;
+    cout << "N_ITERATIONS: " << N_ITERATIONS << endl;
+    cout << "Inertia: " << inertia << endl;
+    cout << "Cognitive: " << cognitive << endl;
+    cout << "Social: " << social << endl;
     saveGridData();
     for(int i = 0; i < N_ITERATIONS; i++){
         updates(inertia, cognitive, social, particles);
         saveParticleData(particles, i);
     }
     cout << "Final Global Best: (" 
-     << Particle::getGlobalBest().getX() << ", " 
-     << Particle::getGlobalBest().getY() << ") Value: " 
-     << evaluateFunction(Particle::getGlobalBest()) << endl;
+    << Particle::getGlobalBest().getX() << ", " 
+    << Particle::getGlobalBest().getY() << ") Value: " 
+    << evaluateFunction(Particle::getGlobalBest()) << endl;
     /*for (int i = 0; i < N_PARTICLES; i++) {
         //print the particle position
         cout << "Particle " << i << " position: " << particles[i].getPosition().getX() << " " << particles[i].getPosition().getY() << endl;
     }*/
-   
+    system("python3 animation.py");
 
     
     return 0;
