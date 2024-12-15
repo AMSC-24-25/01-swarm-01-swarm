@@ -2,7 +2,7 @@
 CXX = g++
 
 # Flags per il compilatore
-CXXFLAGS = -std=c++20 -Wall -Wextra -O2
+CXXFLAGS = -std=c++20 -Wall -Wextra -O2 -fopenmp
 
 # Nome del file eseguibile
 TARGET = main
