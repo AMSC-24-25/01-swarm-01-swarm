@@ -5,8 +5,50 @@
 #include <vector>
 #include <string>
 #include <sys/time.h>
-
+#include <chrono>
+#include <functional>
+#include <fstream>
 using namespace std;
+
+
+void saveParticlePositions(const std::vector<Particle>& particles, const std::string& filename) {
+    std::ofstream file(filename, std::ios::app);
+    for (const auto& particle : particles) {
+        file << particle.getPosition().getX() << "," << particle.getPosition().getY() << "\n";
+    }
+    file << "END\n"; // Indica la fine di un'iterazione
+    file.close();
+}
+
+void saveFunctionValues(const std::string& filename, float lowerBound, float upperBound, int resolution) {
+    std::ofstream file(filename);
+    float step = (upperBound - lowerBound) / (resolution - 1);
+
+    for (int i = 0; i < resolution; ++i) {
+        for (int j = 0; j < resolution; ++j) {
+            float x = lowerBound + i * step;
+            float y = lowerBound + j * step;
+            float value = evaluateFunction(Coordinate(x, y));
+            file << x << "," << y << "," << value << "\n";
+        }
+    }
+
+    file.close();
+}
+
+
+double measureExecutionTime(
+    const std::string& methodName,
+    const std::function<void()>& simulationFunction
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    simulationFunction();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Execution time (" << methodName << "): " << elapsed.count() << " seconds" << std::endl;
+    return elapsed.count();
+}
+
 
 void displayMenu() {
     cout << "=== Particle Swarm Optimization Menu ===" << endl;
@@ -19,6 +61,8 @@ void displayMenu() {
     cout << "2. Setup Parameters" << endl;
     cout << "3. Setup Bounds" << endl;
     cout << "4. Launch Simulation" << endl;
+    cout << "5. Generate Simulation GIF" << endl;
+    cout << "6. Clean GIF files" << endl;
     cout << "0. Exit" << endl;
     cout << "========================================" << endl;
 }
@@ -100,16 +144,64 @@ int main() {
                 setupBounds(lowerBound, upperBound);
                 break;
             case 4: {
-                vector<Particle> particles(n_particles);
-                setupParticlesParallel(particles, lowerBound, upperBound);
-                for (int i = 0; i < n_iterations; i++) {
-                    updatesParallel(inertia, cognitive, social, particles, lowerBound, upperBound);
-                }
+                std::vector<Particle> particles(n_particles);
+                std::vector<Particle> particlesSerial(particles);
+
+                
+
                 printSimulationRecap(n_particles, n_iterations, inertia, cognitive, social, lowerBound, upperBound);
-                cout << "Best result: (" 
-                     << Particle::getGlobalBest().getX() << ", " 
-                     << Particle::getGlobalBest().getY() << ") Valore: " 
-                     << evaluateFunction(Particle::getGlobalBest()) << endl;
+
+                double parallelTime=measureExecutionTime("Parallel", [&]() {
+                    setupParticlesParallel(particles, lowerBound, upperBound);
+                    for (int i = 0; i < n_iterations; i++) {
+                        updatesParallel(inertia, cognitive, social, particles, lowerBound, upperBound);
+                    }
+                });
+                std::cout << "Best result (Parallel): ("
+                          << Particle::getGlobalBest().getX() << ", "
+                          << Particle::getGlobalBest().getY() << ") Valore: "
+                          << evaluateFunction(Particle::getGlobalBest()) << std::endl;
+                
+                //free memory
+                particles.clear();
+
+                double serialTime=measureExecutionTime("Serial", [&]() {
+                    setupParticlesSerial(particlesSerial, lowerBound, upperBound);
+                    for (int i = 0; i < n_iterations; i++) {
+                        updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
+                    }
+                });
+
+                
+
+                
+                std::cout << "Best result (Serial): ("
+                          << Particle::getGlobalBest().getX() << ", "
+                          << Particle::getGlobalBest().getY() << ") Valore: "
+                          << evaluateFunction(Particle::getGlobalBest()) << std::endl;
+                cout<<"Speedup: "<<serialTime/parallelTime<<endl;
+                particlesSerial.clear();
+                break;
+            }
+            case 5: { 
+                std::vector<Particle> particles(n_particles);
+                setupParticlesSerial(particles, lowerBound, upperBound);
+
+                saveFunctionValues("./animation/function_values.csv", lowerBound, upperBound, 200);
+
+                for (int i = 0; i < n_iterations; i++) {
+                    updatesSerial(inertia, cognitive, social, particles, lowerBound, upperBound);
+                    saveParticlePositions(particles, "./animation/particle_positions.csv");
+                }
+
+                
+                system("python3 pso_animation.py");
+
+                break;
+            }
+            case 6: {
+                system("rm ./animation/*.csv ./frames/*.png");
+                system("rm pso_animation.gif");
                 break;
             }
             case 0:
