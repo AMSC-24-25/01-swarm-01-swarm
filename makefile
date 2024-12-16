@@ -27,7 +27,9 @@ $(BUILD_DIR):
 
 clean:
 	rm -rf $(BUILD_DIR)
-
+clean images:
+	rm ./animation/*.csv ./frames/*.png
+	rm pso_animation.gif
 # Regole di utilità
 run: $(TARGET)
 	./$(TARGET)
