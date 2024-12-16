@@ -1,31 +1,33 @@
-# Nome del compilatore
+# Variabili
 CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Iinclude -fopenmp
+LDFLAGS = -fopenmp
 
-# Flags per il compilatore
-CXXFLAGS = -std=c++20 -Wall -Wextra -O2 -fopenmp
+# Directory
+SRC_DIR = src
+INCLUDE_DIR = include
+BUILD_DIR = build
+TARGET = $(BUILD_DIR)/main
 
-# Nome del file eseguibile
-TARGET = main
+# File sorgenti e oggetti
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
-# File sorgenti
-SRCS = main.cpp particle.hpp coordinate.hpp
+# Regole principali
+all: $(TARGET)
 
-# File oggetto (generati dai sorgenti)
-OBJS = $(SRCS:.cpp=.o)
-
-# Regola principale: compila l'eseguibile
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
-# Regola per compilare i file .cpp in .o
-%.o: %.cpp %.hpp
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Dipendenze specifiche (aggiungi altre se necessario)
-main.o: particle.hpp
-particle.o: particle.hpp coordinate.hpp
-position.o: coordinate.hpp
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-# Regola per pulire i file generati
 clean:
-	rm -f animation/*.csv frames/*.png animation.gif
+	rm -rf $(BUILD_DIR)
+
+# Regole di utilità
+run: $(TARGET)
+	./$(TARGET)

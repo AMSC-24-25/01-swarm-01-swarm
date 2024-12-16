@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include "coordinate.hpp"
+#include "coordinate.cpp"
 
 class Particle {
     private: 

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "particle.hpp"
+#include "particle.cpp"
 #include <vector>
 #include <random>
 #include <cmath>
@@ -18,15 +18,19 @@ Coordinate Particle::globalBest=Coordinate(0,0);
 int N_PARTICLES, N_ITERATIONS; 
 float LOWER_BOUND, UPPER_BOUND;
 
-double clamp(double val) {
+double clampVel(double val) {
   if (val < -20) return -20;
   if (val > 20) return 20;
   return val;
 }
+void clampPos(double *val) {
+  if (*val < LOWER_BOUND) *val = LOWER_BOUND;
+  if (*val > UPPER_BOUND) *val = UPPER_BOUND;
+}
 
 enum FunctionType { RASTRIGIN, SPHERE, ROSENBROCK ,BAELE, STRANGE};
 
-FunctionType currentFunction = BAELE;
+FunctionType currentFunction = STRANGE;
 double eggholder(Coordinate x) {
     //return the eggholder function value
     return -(x.getY() + 47) * sin(sqrt(abs(x.getY() + x.getX() / 2 + 47))) - x.getX() * sin(sqrt(abs(x.getX() - (x.getY() + 47))));
@@ -127,8 +131,8 @@ void setupParticlesParallel(vector<Particle> &particles) {
         if (i == 0) {
             Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
         }
-        #pragma omp critical
         //update the global best if the particle is better
+        #pragma omp critical
         if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(Particle::getGlobalBest())) {
             Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
             }
@@ -170,12 +174,14 @@ void updatesParallel(float inertia, float cognitive, float social, vector<Partic
             //update velocity
             double vx = inertia * particles[i].getVelocity().getX() + cognitive * (particles[i].getPersonalBest().getX() - particles[i].getPosition().getX()) + social * (Particle::getGlobalBest().getX() - particles[i].getPosition().getX());
             double vy = inertia * particles[i].getVelocity().getY() + cognitive * (particles[i].getPersonalBest().getY() - particles[i].getPosition().getY()) + social * (Particle::getGlobalBest().getY() - particles[i].getPosition().getY());
-            vx = clamp(vx);
-            vy = clamp(vy);
+            vx = clampVel(vx);
+            vy = clampVel(vy);
             particles[i].updateVelocity(vx, vy);
             //update position
             double x = particles[i].getPosition().getX() + vx;
             double y = particles[i].getPosition().getY() + vy;
+            clampPos(&x);
+            clampPos(&y);
             particles[i].updatePosition(x, y);
             //update personal best
             if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(particles[i].getPersonalBest())) {
@@ -197,12 +203,14 @@ void updatesSerial(float inertia, float cognitive, float social, vector<Particle
         //update velocity
         double vx = inertia * particles[i].getVelocity().getX() + cognitive * (particles[i].getPersonalBest().getX() - particles[i].getPosition().getX()) + social * (Particle::getGlobalBest().getX() - particles[i].getPosition().getX());
         double vy = inertia * particles[i].getVelocity().getY() + cognitive * (particles[i].getPersonalBest().getY() - particles[i].getPosition().getY()) + social * (Particle::getGlobalBest().getY() - particles[i].getPosition().getY());
-        vx = clamp(vx);
-        vy = clamp(vy);
+        vx = clampVel(vx);
+        vy = clampVel(vy);
         particles[i].updateVelocity(vx, vy);
         //update position
         double x = particles[i].getPosition().getX() + vx;
         double y = particles[i].getPosition().getY() + vy;
+        clampPos(&x);
+        clampPos(&y);
         particles[i].updatePosition(x, y);
         //update personal best
         if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(particles[i].getPersonalBest())) {
@@ -238,18 +246,13 @@ int main(int argc, char *argv[]) {
     vector<Particle> particlesParallel(N_PARTICLES);
     
 	gettimeofday(&t1, NULL);	
-    //setupParticlesParallel(particlesParallel); 
+    setupParticlesParallel(particlesParallel); 
 	gettimeofday(&t2, NULL);	
     etime = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
 	etime=etime/1000;
 
-    vector<Particle> particlesSerial(N_PARTICLES);
-	gettimeofday(&t3, NULL);	
-    setupParticlesSerial(particlesSerial); 
-	gettimeofday(&t4, NULL);	
-    etime1 = (t4.tv_sec - t3.tv_sec) * 1000 + (t4.tv_usec - t3.tv_usec) / 1000;
-	etime1 = etime1/1000;
-    cout<<"Serial setup time: "<<etime1<<endl;
+    
+    
     //print out the parameter for debugging
     cout << "N_PARTICLES: " << N_PARTICLES << endl;
     cout << "LOWER_BOUND: " << LOWER_BOUND << endl;
@@ -272,7 +275,18 @@ int main(int argc, char *argv[]) {
     gettimeofday(&t8, NULL);
     etime3 = (t8.tv_sec - t7.tv_sec) * 1000 + (t8.tv_usec - t7.tv_usec) / 1000;
     etime3 = etime3 / 1000;
-    
+    cout << "Global Best after Parallel: (" 
+     << Particle::getGlobalBest().getX() << ", " 
+     << Particle::getGlobalBest().getY() << ") Value: " 
+     << evaluateFunction(Particle::getGlobalBest()) << endl;
+
+    vector<Particle> particlesSerial(N_PARTICLES);
+	gettimeofday(&t3, NULL);	
+    setupParticlesSerial(particlesSerial); 
+	gettimeofday(&t4, NULL);	
+    etime1 = (t4.tv_sec - t3.tv_sec) * 1000 + (t4.tv_usec - t3.tv_usec) / 1000;
+	etime1 = etime1/1000;
+
     gettimeofday(&t5, NULL);
     for(int i = 0; i < N_ITERATIONS; i++){
         updatesSerial(inertia, cognitive, social, particlesSerial);
@@ -288,8 +302,8 @@ int main(int argc, char *argv[]) {
     << Particle::getGlobalBest().getY() << ") Value: " 
     << evaluateFunction(Particle::getGlobalBest()) << endl;
     
-    cout << "Parallel Execution Time: " <<etime3+etime<< "  milliseconds" << endl;
-    cout << "Serial Execution Time: " <<etime1+etime2<< "  milliseconds" << endl;
+    cout << "Parallel Execution Time: " <<etime3+etime<< "  seconds" << endl;
+    cout << "Serial Execution Time: " <<etime1+etime2<< "  seconds" << endl;
     
     cout<<" Speedup: "<< (etime1+etime2)/(etime+etime3) << endl;
 
