@@ -3,12 +3,19 @@
 // Definizione della variabile statica
 Coordinate Particle::globalBest = Coordinate();
 
+/* More elegant, and more efficient:
+Particle::Particle():position{0.0.}, velocity{0,0},personaleBest{0,0}{};
+Moreover, if you set (0,0) as the default value in the declaration of Coordinate you
+can use here the synthesised default constructor
+*/
+
 Particle::Particle() {
     position.setCoordinate(0, 0);
     velocity.setCoordinate(0, 0);
     personalBest.setCoordinate(0, 0);
 }
 
+// Here is ok...
 Particle::Particle(double x, double y, double vx, double vy)
     : position(x, y), velocity(vx, vy), personalBest(x, y) {}
 
