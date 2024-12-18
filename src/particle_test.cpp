@@ -30,17 +30,17 @@ void setupParticlesParallel(vector<Particle>& particles, float lowerBound, float
     you should do something like that:
 
     Generate a few seeds using seed_seq. You need a different seeds to feed the 4 generators for each thread
-    You can use the random device to initialize seed_seq a few values (4 bastano)
+    You can use the random device to initialize seed_seq a few values (4 is enough)
     auto seq = seed_seq(rd(),rd(),rd(),rd());
-    auto num_seeds=numthreads; (numthread e` il numero di thread che volete usare)
-    std::vector<std::unit32_t> seeds(num_seeds);
+    auto num_seeds=numthreads; (numthreads is the number of threads you want to use)
+    std::vector<std::unit32_t> seeds(num_seeds);// a seed per thread 
     seq.generate(seeds.begin(),seeds(end));// cosi avete dei seed ben distribuiti per la massima entropia
     #pragma omp parallel // aprite al sezione parallela
     auto rank = omp_num_thread(); // beccate il rank del thread (dovete includere omp.h)
     std::mt19937 engine(seeds(rank)); // one engine per thread
     #pragma omp for schedule(dynamic, 10) num_threads(numthreads)
         for (size_t i = 0; i < particles.size(); i++) {
-          particles[i] = Particle(randomGenerator(engine()), randomGenerator(engin()), randomGenerator(engine()), randomGenerator(engine()));
+          particles[i] = Particle(randomGenerator(engine), randomGenerator(engine), randomGenerator(engine), randomGenerator(engine));
 
     */
     #pragma omp parallel for schedule(dynamic, 10) num_threads(2)
