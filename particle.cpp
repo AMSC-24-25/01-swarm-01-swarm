@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include "coordinate.cpp"
+#include "coordinate.cpp" //note: header file have extension h or hpp not cpp
 
 class Particle {
     private: 
