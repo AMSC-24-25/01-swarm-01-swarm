@@ -35,7 +35,6 @@ void runGraphExperiments() {
     float lowerBound = -512, upperBound = 512;
     float inertia = 0.5, cognitive = 0.5, social = 0.5;
 
-    // Definizione delle funzioni
     std::vector<std::pair<FunctionType, Coordinate>> functions = {
         {ROSENBROCK, Coordinate(1, 1)},
         {BAELE, Coordinate(3, 0.5)},
@@ -45,8 +44,7 @@ void runGraphExperiments() {
     for (const auto& func : functions) {
         setCurrentFunction(func.first);
         std::string functionName = getFunctionName();
-
-        // Primo esperimento: Variazione particelle
+        
         for (int n_particles = 20; n_particles <= 1520; n_particles += 50) {
             std::vector<Particle> particlesParallel(n_particles);
             std::vector<Particle> particlesSerial(n_particles);
@@ -69,7 +67,6 @@ void runGraphExperiments() {
             dataFile << functionName << "," << n_particles << ",50," << speedup << "\n";
         }
 
-        // Secondo esperimento: Variazione iterazioni
         for (int iterations = 50; iterations <= 100000; iterations += 5000) {
             int n_particles = 100;
             std::vector<Particle> particlesParallel(n_particles);
@@ -96,7 +93,6 @@ void runGraphExperiments() {
 
     dataFile.close();
 
-    // Genera i grafici con Python
     system("python3 generate_graphs.py");
 }
 
@@ -146,7 +142,7 @@ void saveParticlePositions(const std::vector<Particle>& particles, const std::st
     for (const auto& particle : particles) {
         file << particle.getPosition().getX() << "," << particle.getPosition().getY() << "\n";
     }
-    file << "END\n"; // Indica la fine di un'iterazione
+    file << "END\n"; 
     file.close();
 }
 
