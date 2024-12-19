@@ -44,7 +44,10 @@ void setupParticlesParallel(vector<Particle>& particles, float lowerBound, float
 
             particles[i] = Particle(x, y, vx, vy);
             particles[i].updatePersonalBest(x, y);
-
+            if(i==0){
+                #pragma omp critical
+                Particle::updateGlobalBest(x, y);
+            }
             
             if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(Particle::getGlobalBest())) {
                 #pragma omp critical
@@ -67,7 +70,9 @@ void setupParticlesSerial(vector<Particle>& particles, float lowerBound, float u
     for (size_t i = 0; i < particles.size(); i++) {
         particles[i] = Particle(randomGenerator(seed), randomGenerator(seed), randomGenerator(seed), randomGenerator(seed));
         particles[i].updatePersonalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
-
+        if(i==0){
+            Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
+        }
         if (evaluateFunction(particles[i].getPosition()) < evaluateFunction(Particle::getGlobalBest())) {
             Particle::updateGlobalBest(particles[i].getPosition().getX(), particles[i].getPosition().getY());
         }
