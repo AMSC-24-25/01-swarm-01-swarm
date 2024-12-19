@@ -1,6 +1,5 @@
 #include "particle.hpp"
 
-// Definizione della variabile statica
 Coordinate Particle::globalBest = Coordinate();
 
 /* More elegant, and more efficient:
@@ -9,11 +8,8 @@ Moreover, if you set (0,0) as the default value in the declaration of Coordinate
 can use here the synthesised default constructor
 */
 
-Particle::Particle() {
-    position.setCoordinate(0, 0);
-    velocity.setCoordinate(0, 0);
-    personalBest.setCoordinate(0, 0);
-}
+Particle::Particle(): position(0,0), velocity(0,0), personalBest(0,0){}
+
 
 // Here is ok...
 Particle::Particle(double x, double y, double vx, double vy)
