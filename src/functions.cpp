@@ -5,7 +5,32 @@
 using namespace std;
 
 
+/*
+A good attempt to be able to treat different functions. However it is more elegant and
+more easily extensible using a factory that employes a map or a unordered_map, per esempio
+struct FunctionFactory{
+void addFunction(FunctionType const & f, std::string const & id)
+ functions.insert(id,f);
+auto getFunction(std::string const & name) const
+{
+   auto it=functions.find(name);
+   if (it == functions.end())
+     throw "Function not found";
+   return it->second;
+}
+private:
+  std::map<std::string, FunctionType> functions;
+}
 
+FunctionFactory loadFunctions()
+{
+    FunctionFactory factory;
+    factory.addFunction("Rosenbrock". &rosembrock)'
+
+// etc etc
+}
+This is the general idea of an object factory that maps an identifier to an object.
+    */
 static FunctionType currentFunction = STRANGE;
 std::string getFunctionName() {
     switch (getCurrentFunction()) {
