@@ -1,11 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Carica i dati per lo Speedup
+
 speedup_data = pd.read_csv("speedup_data.csv")
 error_data = pd.read_csv("error_data.csv")
 
-# Grafico 1: Speedup vs Particelle per tutte le funzioni
+
 plt.figure(figsize=(10, 6))
 for func in speedup_data["function"].unique():
     data_func = speedup_data[(speedup_data["function"] == func) & (speedup_data["iterations"] == 50)]
@@ -19,7 +19,7 @@ plt.legend()
 plt.grid()
 plt.savefig("speedup_vs_particles.png")
 
-# Grafico 2: Speedup vs Iterazioni per tutte le funzioni
+
 plt.figure(figsize=(10, 6))
 for func in speedup_data["function"].unique():
     data_func = speedup_data[(speedup_data["function"] == func) & (speedup_data["particles"] == 50)]
@@ -33,7 +33,7 @@ plt.legend()
 plt.grid()
 plt.savefig("speedup_vs_iterations.png")
 
-# Grafico 3: Errore relativo vs Iterazioni per tutte le funzioni
+
 plt.figure(figsize=(10, 6))
 for func in error_data["function"].unique():
     data_func = error_data[error_data["function"] == func]

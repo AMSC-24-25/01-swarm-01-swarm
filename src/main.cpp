@@ -50,7 +50,7 @@ void runGraphExperiments() {
         std::string functionName = getFunctionName();
         
 
-        // Speedup vs Particelle (Iterazioni fisse a 50)
+        
         for (int n_particles = 20; n_particles <= 1520; n_particles += 50) {
             double totalParallelTime = 0, totalSerialTime = 0;
 
@@ -77,7 +77,7 @@ void runGraphExperiments() {
             speedupFile << functionName << "," << n_particles << ",50," << avgSpeedup << "\n";
         }
 
-        // Speedup vs Iterazioni (Particelle fisse a 50)
+        
         for (int iterations = 50; iterations <= 1000; iterations += 50) {
             double totalParallelTime = 0, totalSerialTime = 0;
 
