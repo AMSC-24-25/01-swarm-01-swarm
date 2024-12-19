@@ -48,6 +48,7 @@ void runGraphExperiments() {
     for (const auto& func : functions) {
         setCurrentFunction(func.first);
         std::string functionName = getFunctionName();
+        
 
         // Speedup vs Particelle (Iterazioni fisse a 50)
         for (int n_particles = 20; n_particles <= 1520; n_particles += 50) {
@@ -176,7 +177,7 @@ void saveParticlePositions(const std::vector<Particle>& particles, const std::st
     for (const auto& particle : particles) {
         file << particle.getPosition().getX() << "," << particle.getPosition().getY() << "\n";
     }
-    file << "END\n"; // Indica la fine di un'iterazione
+    file << "END\n"; 
     file.close();
 }
 
