@@ -8,7 +8,137 @@
 #include <chrono>
 #include <functional>
 #include <fstream>
+#include <cmath>
 using namespace std;
+
+
+double measureExecutionTime(
+    const std::string& methodName,
+    const std::function<void()>& simulationFunction
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    simulationFunction();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Execution time (" << methodName << "): " << elapsed.count() << " seconds" << std::endl;
+    return elapsed.count();
+}
+
+double calculateError(Coordinate globalBestValue, Coordinate optimalValue) {
+    // Calculate the error as the Euclidean distance between the global best value and the optimal value
+    return sqrt(pow(globalBestValue.getX() - optimalValue.getX(), 2) + pow(globalBestValue.getY() - optimalValue.getY(), 2));
+}
+void runGraphExperiments() {
+    std::ofstream dataFile("experiment_data.csv");
+    dataFile << "function,particles,iterations,speedup\n";
+
+    float lowerBound = -512, upperBound = 512;
+    float inertia = 0.5, cognitive = 0.5, social = 0.5;
+
+    // Definizione delle funzioni
+    std::vector<std::pair<FunctionType, Coordinate>> functions = {
+        {ROSENBROCK, Coordinate(1, 1)},
+        {BAELE, Coordinate(3, 0.5)},
+        {STRANGE, Coordinate(512, 404.2319)},
+    };
+
+    for (const auto& func : functions) {
+        setCurrentFunction(func.first);
+        std::string functionName = getFunctionName();
+
+        // Primo esperimento: Variazione particelle
+        for (int n_particles = 20; n_particles <= 1520; n_particles += 50) {
+            std::vector<Particle> particlesParallel(n_particles);
+            std::vector<Particle> particlesSerial(n_particles);
+
+            double parallelTime = measureExecutionTime("Parallel", [&]() {
+                setupParticlesParallel(particlesParallel, lowerBound, upperBound);
+                for (int i = 0; i < 50; ++i) {
+                    updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
+                }
+            });
+
+            double serialTime = measureExecutionTime("Serial", [&]() {
+                setupParticlesSerial(particlesSerial, lowerBound, upperBound);
+                for (int i = 0; i < 50; ++i) {
+                    updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
+                }
+            });
+
+            double speedup = serialTime / parallelTime;
+            dataFile << functionName << "," << n_particles << ",50," << speedup << "\n";
+        }
+
+        // Secondo esperimento: Variazione iterazioni
+        for (int iterations = 50; iterations <= 100000; iterations += 5000) {
+            int n_particles = 100;
+            std::vector<Particle> particlesParallel(n_particles);
+            std::vector<Particle> particlesSerial(n_particles);
+
+            double parallelTime = measureExecutionTime("Parallel", [&]() {
+                setupParticlesParallel(particlesParallel, lowerBound, upperBound);
+                for (int i = 0; i < iterations; ++i) {
+                    updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
+                }
+            });
+
+            double serialTime = measureExecutionTime("Serial", [&]() {
+                setupParticlesSerial(particlesSerial, lowerBound, upperBound);
+                for (int i = 0; i < iterations; ++i) {
+                    updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
+                }
+            });
+
+            double speedup = serialTime / parallelTime;
+            dataFile << functionName << ",100," << iterations << "," << speedup << "\n";
+        }
+    }
+
+    dataFile.close();
+
+    // Genera i grafici con Python
+    system("python3 generate_graphs.py");
+}
+
+void runExperiment() {
+    int n_iterations = 15; 
+    float inertia = 0.5, cognitive = 0.5, social = 0.5;
+    float lowerBound = -512, upperBound = 512; 
+
+    std::ofstream results("results.csv");
+    results << "function,n_particles,error\n";
+
+    
+
+    std::vector<std::pair<FunctionType, Coordinate>> functions = {
+        {ROSENBROCK, Coordinate(1, 1)},
+        {BAELE, Coordinate(3, 0.5)},
+        {STRANGE, Coordinate(512, 404.2319)},
+    };
+
+    for (const auto& func : functions) {
+        setCurrentFunction(func.first);
+        Coordinate optimalValue = func.second;
+
+        for (int n_particles = 100; n_particles <= 3000; n_particles += 100) {
+            std::vector<Particle> particles(n_particles);
+            setupParticlesSerial(particles, lowerBound, upperBound);
+
+            for (int i = 0; i < n_iterations; i++) {
+                updatesSerial(inertia, cognitive, social, particles, lowerBound, upperBound);
+            }
+
+            double error = calculateError(Particle::getGlobalBest(), optimalValue);
+            results << getFunctionName() << "," << n_particles << "," << error << "\n";
+
+            particles.clear();
+        }
+    }
+
+    results.close();
+    system("python3 experiment.py");
+}
+
 
 
 void saveParticlePositions(const std::vector<Particle>& particles, const std::string& filename) {
@@ -37,17 +167,7 @@ void saveFunctionValues(const std::string& filename, float lowerBound, float upp
 }
 
 
-double measureExecutionTime(
-    const std::string& methodName,
-    const std::function<void()>& simulationFunction
-) {
-    auto start = std::chrono::high_resolution_clock::now();
-    simulationFunction();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Execution time (" << methodName << "): " << elapsed.count() << " seconds" << std::endl;
-    return elapsed.count();
-}
+
 
 
 void displayMenu() {
@@ -204,6 +324,12 @@ int main() {
                 system("rm pso_animation.gif");
                 break;
             }
+            case 7:
+                runExperiment();
+                break;
+            case 8:
+                runGraphExperiments();
+                break;
             case 0:
                 cout << "Closing the program..." << endl;
                 return 0;
