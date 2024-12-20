@@ -96,7 +96,7 @@ void runGraphExperiments() {
 
     dataFile.close();
 
-    // Genera i grafici con Python
+    
     system("python3 generate_graphs.py");
 }
 
@@ -146,7 +146,7 @@ void saveParticlePositions(const std::vector<Particle>& particles, const std::st
     for (const auto& particle : particles) {
         file << particle.getPosition().getX() << "," << particle.getPosition().getY() << "\n";
     }
-    file << "END\n"; // Indica la fine di un'iterazione
+    file << "END\n"; 
     file.close();
 }
 
