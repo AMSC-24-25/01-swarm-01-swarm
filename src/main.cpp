@@ -124,8 +124,14 @@ void runGraphExperiments() {
         }
     }
 
+<<<<<<<<< Temporary merge branch 1
     speedupFile.close();
     errorFile.close();
+=========
+    dataFile.close();
+
+    
+>>>>>>>>> Temporary merge branch 2
     system("python3 generate_graphs.py");
 }
 
