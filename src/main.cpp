@@ -9,6 +9,7 @@
 #include <functional>
 #include <fstream>
 #include <cmath>
+#include <numeric>
 using namespace std;
 
 
@@ -29,13 +30,15 @@ double calculateError(Coordinate globalBestValue, Coordinate optimalValue) {
     return sqrt(pow(globalBestValue.getX() - optimalValue.getX(), 2) + pow(globalBestValue.getY() - optimalValue.getY(), 2));
 }
 void runGraphExperiments() {
-    std::ofstream dataFile("experiment_data.csv");
-    dataFile << "function,particles,iterations,speedup\n";
+    std::ofstream speedupFile("speedup_data.csv");
+    speedupFile << "function,particles,iterations,speedup\n";
+
+    std::ofstream errorFile("error_data.csv");
+    errorFile << "function,iterations,error\n";
 
     float lowerBound = -512, upperBound = 512;
     float inertia = 0.5, cognitive = 0.5, social = 0.5;
 
-    // Definizione delle funzioni
     std::vector<std::pair<FunctionType, Coordinate>> functions = {
         {ROSENBROCK, Coordinate(1, 1)},
         {BAELE, Coordinate(3, 0.5)},
@@ -45,60 +48,88 @@ void runGraphExperiments() {
     for (const auto& func : functions) {
         setCurrentFunction(func.first);
         std::string functionName = getFunctionName();
+        
 
-        // Primo esperimento: Variazione particelle
+        
         for (int n_particles = 20; n_particles <= 1520; n_particles += 50) {
-            std::vector<Particle> particlesParallel(n_particles);
-            std::vector<Particle> particlesSerial(n_particles);
+            double totalParallelTime = 0, totalSerialTime = 0;
 
-            double parallelTime = measureExecutionTime("Parallel", [&]() {
-                setupParticlesParallel(particlesParallel, lowerBound, upperBound);
-                for (int i = 0; i < 50; ++i) {
-                    updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
-                }
-            });
+            for (int run = 0; run < 100; ++run) {
+                std::vector<Particle> particlesParallel(n_particles);
+                std::vector<Particle> particlesSerial(n_particles);
 
-            double serialTime = measureExecutionTime("Serial", [&]() {
-                setupParticlesSerial(particlesSerial, lowerBound, upperBound);
-                for (int i = 0; i < 50; ++i) {
-                    updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
-                }
-            });
+                totalParallelTime += measureExecutionTime("Parallel", [&]() {
+                    setupParticlesParallel(particlesParallel, lowerBound, upperBound);
+                    for (int i = 0; i < 50; ++i) {
+                        updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
+                    }
+                });
 
-            double speedup = serialTime / parallelTime;
-            dataFile << functionName << "," << n_particles << ",50," << speedup << "\n";
+                totalSerialTime += measureExecutionTime("Serial", [&]() {
+                    setupParticlesSerial(particlesSerial, lowerBound, upperBound);
+                    for (int i = 0; i < 50; ++i) {
+                        updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
+                    }
+                });
+            }
+
+            double avgSpeedup = (totalSerialTime / 30) / (totalParallelTime / 30);
+            speedupFile << functionName << "," << n_particles << ",50," << avgSpeedup << "\n";
         }
 
-        // Secondo esperimento: Variazione iterazioni
-        for (int iterations = 50; iterations <= 100000; iterations += 5000) {
-            int n_particles = 100;
-            std::vector<Particle> particlesParallel(n_particles);
-            std::vector<Particle> particlesSerial(n_particles);
+        
+        for (int iterations = 50; iterations <= 1000; iterations += 50) {
+            double totalParallelTime = 0, totalSerialTime = 0;
 
-            double parallelTime = measureExecutionTime("Parallel", [&]() {
-                setupParticlesParallel(particlesParallel, lowerBound, upperBound);
+            for (int run = 0; run < 100; ++run) {
+                std::vector<Particle> particlesParallel(50);
+                std::vector<Particle> particlesSerial(50);
+
+                totalParallelTime += measureExecutionTime("Parallel", [&]() {
+                    setupParticlesParallel(particlesParallel, lowerBound, upperBound);
+                    for (int i = 0; i < iterations; ++i) {
+                        updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
+                    }
+                });
+
+                totalSerialTime += measureExecutionTime("Serial", [&]() {
+                    setupParticlesSerial(particlesSerial, lowerBound, upperBound);
+                    for (int i = 0; i < iterations; ++i) {
+                        updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
+                    }
+                });
+            }
+
+            double avgSpeedup = (totalSerialTime / 30) / (totalParallelTime / 30);
+            speedupFile << functionName << ",50," << iterations << "," << avgSpeedup << "\n";
+        }
+
+        
+        for (int iterations = 1; iterations <= 301; iterations += 10) {
+            
+            double error=0;
+            
+            for(int run=0;run<100;run++){
+                std::vector<Particle> particles(50);
+                setupParticlesSerial(particles, lowerBound, upperBound);
+
                 for (int i = 0; i < iterations; ++i) {
-                    updatesParallel(inertia, cognitive, social, particlesParallel, lowerBound, upperBound);
+                    updatesSerial(inertia, cognitive, social, particles, lowerBound, upperBound);
                 }
-            });
-
-            double serialTime = measureExecutionTime("Serial", [&]() {
-                setupParticlesSerial(particlesSerial, lowerBound, upperBound);
-                for (int i = 0; i < iterations; ++i) {
-                    updatesSerial(inertia, cognitive, social, particlesSerial, lowerBound, upperBound);
-                }
-            });
-
-            double speedup = serialTime / parallelTime;
-            dataFile << functionName << ",100," << iterations << "," << speedup << "\n";
+                error += calculateError(Particle::getGlobalBest(), func.second);
+            }
+            error = error/100;
+            errorFile << functionName << "," << iterations << "," << error << "\n";
+            
         }
     }
 
-    dataFile.close();
-
-    
+    speedupFile.close();
+    errorFile.close();
     system("python3 generate_graphs.py");
 }
+
+
 
 void runExperiment() {
     int n_iterations = 15; 
